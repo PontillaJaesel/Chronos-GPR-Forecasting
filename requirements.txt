@@ -1,0 +1,8 @@
+streamlit>=1.63
+altair>=5,<7
+chronos-forecasting
+torch
+pandas
+numpy
+scikit-learn
+matplotlib

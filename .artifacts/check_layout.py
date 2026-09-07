@@ -1,0 +1,25 @@
+﻿from pathlib import Path
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(executable_path=r'C:\Program Files\Google\Chrome\Application\chrome.exe', headless=True)
+    page = browser.new_page(viewport={'width': 1440, 'height': 1500}, device_scale_factor=1)
+    page.goto('http://127.0.0.1:8502')
+    page.get_by_role('button', name='Run comparison', exact=True).wait_for()
+    page.get_by_text('Observed production', exact=True).wait_for()
+    page.screenshot(path='.artifacts/desktop-initial.png', full_page=True)
+    print('Desktop overflow:', page.evaluate('document.documentElement.scrollWidth > window.innerWidth'))
+    print('Caption:', page.get_by_text('Synthetic demo · 1987 Q1 – 2025 Q4', exact=True).evaluate('(e) => ({color:getComputedStyle(e).color, parent:e.parentElement.outerHTML})'))
+    page.get_by_text('Advanced settings', exact=True).click()
+    print('Advanced controls:', page.get_by_role('slider').count())
+    page.get_by_text('Upload CSV', exact=True).click()
+    page.get_by_text('Add quarterly production data', exact=True).wait_for()
+    assert page.get_by_role('button', name='Run comparison', exact=True).is_disabled()
+    page.screenshot(path='.artifacts/upload-state.png', full_page=True)
+    page.get_by_text('Demo data', exact=True).click()
+    page.get_by_text('Observed production', exact=True).wait_for()
+    page.set_viewport_size({'width': 390, 'height': 1900})
+    page.screenshot(path='.artifacts/mobile-initial.png', full_page=True)
+    print('Mobile overflow:', page.evaluate('document.documentElement.scrollWidth > window.innerWidth'))
+    print('Mobile main:', page.locator('[data-testid="stMain"]').evaluate('(e) => ({scrollWidth:e.scrollWidth,clientWidth:e.clientWidth})'))
+    browser.close()

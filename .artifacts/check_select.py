@@ -1,0 +1,17 @@
+﻿from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    browser=p.chromium.launch(executable_path=r'C:\Program Files\Google\Chrome\Application\chrome.exe', headless=True)
+    page=browser.new_page()
+    page.goto('http://127.0.0.1:8502')
+    page.get_by_role('button',name='Run comparison',exact=True).wait_for()
+    page.get_by_role('combobox').click()
+    print('Options:', page.get_by_role('option').all_text_contents())
+    print('Listbox:', page.get_by_role('listbox').count())
+    print('HTML:', page.get_by_role('combobox').evaluate('(e)=>e.outerHTML'))
+    print('Status:', page.locator('[data-testid*=Status]').evaluate_all('(es)=>es.map(e=>e.outerHTML)'))
+    page.get_by_role('combobox').press('ArrowUp')
+    page.get_by_role('combobox').press('ArrowUp')
+    page.get_by_role('combobox').press('ArrowUp')
+    page.get_by_role('combobox').press('Enter')
+    print('Selected:', page.get_by_role('combobox').evaluate('(e)=>e.parentElement.parentElement.innerText'))
+    browser.close()

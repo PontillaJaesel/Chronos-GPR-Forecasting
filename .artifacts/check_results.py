@@ -1,0 +1,46 @@
+﻿from pathlib import Path
+from playwright.sync_api import sync_playwright, expect
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(executable_path=r'C:\Program Files\Google\Chrome\Application\chrome.exe', headless=True)
+    page = browser.new_page(viewport={'width': 1440, 'height': 1100}, device_scale_factor=1)
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    page.goto('http://127.0.0.1:8503')
+    run = page.get_by_role('button', name='Run comparison', exact=True)
+    run.wait_for()
+    run.click()
+    page.get_by_role('tab', name='Next quarters', exact=True).wait_for(timeout=60000)
+    page.get_by_text('The next quarters, side by side', exact=True).scroll_into_view_if_needed()
+    page.screenshot(path='.artifacts/desktop-forecasts.png')
+    with page.expect_download() as download:
+        page.get_by_role('button', name='Download forecasts (.csv)', exact=True).click()
+    download.value.save_as('.artifacts/forecast-download.csv')
+    expect(page.get_by_role('tab', name='Next quarters', exact=True)).to_be_visible()
+    print('Forecast download bytes:', Path('.artifacts/forecast-download.csv').stat().st_size)
+    page.get_by_role('tab', name='Historical accuracy', exact=True).click()
+    page.get_by_text('Did learning from past errors help?', exact=True).scroll_into_view_if_needed()
+    page.screenshot(path='.artifacts/desktop-accuracy.png')
+    page.get_by_text('All accuracy metrics & forecast horizons', exact=True).click()
+    page.screenshot(path='.artifacts/desktop-metrics.png')
+    page.get_by_text('Inspect the historical forecast errors', exact=True).click()
+    with page.expect_download() as download:
+        page.get_by_role('button', name='Download historical evaluation (.csv)', exact=True).click()
+    download.value.save_as('.artifacts/evaluation-download.csv')
+    print('Evaluation download bytes:', Path('.artifacts/evaluation-download.csv').stat().st_size)
+    page.get_by_test_id('stSelectbox').get_by_role('button', name='Open', exact=True).click()
+    page.get_by_role('option', name='1 quarter', exact=True).click()
+    page.get_by_text('The data or settings have changed.', exact=False).wait_for()
+    print('Changed-settings notice verified')
+    run.click()
+    page.get_by_text('Completed at', exact=False).filter(has_text='1 quarter(s) ahead').wait_for(timeout=60000)
+    page.get_by_role('tab', name='Next quarters', exact=True).click()
+    page.get_by_text('The next quarters, side by side', exact=True).scroll_into_view_if_needed()
+    page.screenshot(path='.artifacts/single-quarter.png')
+    page.set_viewport_size({'width': 390, 'height': 1100})
+    page.get_by_text('The next quarters, side by side', exact=True).scroll_into_view_if_needed()
+    page.screenshot(path='.artifacts/mobile-forecasts.png')
+    print('Mobile result overflow:', page.locator('[data-testid="stMain"]').evaluate('(e) => e.scrollWidth > e.clientWidth'))
+    print('Browser JS errors:', errors)
+    browser.close()
+
